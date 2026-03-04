@@ -9,16 +9,25 @@ export interface HistoryEntry {
   thumbnail?: string;
 }
 
+export interface CustomEqPreset {
+  name: string;
+  gains: number[];
+}
+
 export interface ConfigSchema {
   adBlock: boolean;
   setupCompleted: boolean;
   playHistory: HistoryEntry[];
+  activeEqPreset: string;
+  customEqPresets: CustomEqPreset[];
 }
 
 const defaultConfig: ConfigSchema = {
   adBlock: true,
   setupCompleted: false,
   playHistory: [],
+  activeEqPreset: 'Flat',
+  customEqPresets: [],
 };
 
 const config = new Conf<ConfigSchema>({
@@ -42,5 +51,11 @@ export const isFirstRun = (): boolean => {
 };
 
 export const markSetupCompleted = () => config.set('setupCompleted', true);
+
+export const getActiveEqPreset = (): string => config.get('activeEqPreset') || 'Flat';
+export const saveActiveEqPreset = (preset: string) => config.set('activeEqPreset', preset);
+
+export const getCustomEqPresets = (): CustomEqPreset[] => config.get('customEqPresets') || [];
+export const saveCustomEqPresets = (presets: CustomEqPreset[]) => config.set('customEqPresets', presets);
 
 export default config;

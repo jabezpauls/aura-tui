@@ -12,6 +12,7 @@ import Queue from './Queue';
 import Help from './Help';
 import Playlists from './Playlists';
 import Lyrics from './Lyrics';
+import EqEditor from './EqEditor';
 import StartupAnimation from './StartupAnimation';
 import { theme } from '../utils/theme';
 
@@ -87,6 +88,7 @@ const App = () => {
     if (input === '2') setView('search');
     if (input === '3') setView('queue');
     if (input === '4') setView('playlists');
+    if (input === '5') setView('eq-editor');
     if (input === '?') setView('help');
     if (input === '/') setView('search');
     if (input === 'y') setView(view === 'lyrics' ? 'player' : 'lyrics');
@@ -109,6 +111,11 @@ const App = () => {
 
     // Repeat mode
     if (input === 'l') cycleRepeatMode();
+
+    // Equalizer preset cycling
+    if (input === 'e') {
+      useStore.getState().cycleEqPreset();
+    }
   });
 
   // Show startup animation
@@ -164,6 +171,7 @@ const App = () => {
       case 'playlists': return <Playlists />;
       case 'lyrics': return <Lyrics />;
       case 'help': return <Help />;
+      case 'eq-editor': return <EqEditor />;
       default: return <Home />;
     }
   };
@@ -178,6 +186,7 @@ const App = () => {
           <Text color={view === 'search' ? theme.active : theme.muted}>[2] Search </Text>
           <Text color={view === 'queue' ? theme.active : theme.muted}>[3] Queue </Text>
           <Text color={view === 'playlists' ? theme.active : theme.muted}>[4] Playlists </Text>
+          <Text color={view === 'eq-editor' ? theme.active : theme.muted}>[5] EQ </Text>
           <Text color={view === 'lyrics' ? theme.active : theme.muted}>[Y] Lyrics </Text>
           <Text color={view === 'help' ? theme.active : theme.muted}>[?] Help</Text>
           <Text color={theme.dim}> | Ctrl+Q: Quit</Text>

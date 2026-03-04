@@ -42,34 +42,38 @@ const LoadingSpinner = () => {
   );
 };
 
-// Equalizer component with animation
+// Equalizer component with preset-aware animation
 const Equalizer = ({ isPlaying }: { isPlaying: boolean }) => {
-  const [bars, setBars] = useState([3, 5, 2, 6, 4, 7, 3, 5]);
-  const barCount = 8;
+  const { activeEqPreset, eqDisplayBars } = useStore();
+  const [bars, setBars] = useState(eqDisplayBars);
   const maxHeight = 7;
 
   useEffect(() => {
     if (!isPlaying) {
-      // Show low flat bars when paused
-      setBars([1, 1, 1, 1, 1, 1, 1, 1]);
+      // When paused, show the preset shape at reduced height
+      setBars(eqDisplayBars.map(b => Math.max(1, Math.floor(b * 0.5))));
       return;
     }
 
+    // When playing, animate with subtle jitter around the preset shape
     const interval = setInterval(() => {
-      setBars(prev => prev.map(() => Math.floor(Math.random() * maxHeight) + 1));
+      setBars(eqDisplayBars.map(base => {
+        const jitter = Math.floor(Math.random() * 3) - 1; // -1, 0, or +1
+        return Math.max(1, Math.min(maxHeight, base + jitter));
+      }));
     }, 200);
 
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, eqDisplayBars]);
 
   // Build equalizer bars vertically
   const renderBars = () => {
     const lines: string[] = [];
     for (let row = maxHeight; row >= 1; row--) {
       let line = '';
-      for (let col = 0; col < barCount; col++) {
+      for (let col = 0; col < 8; col++) {
         line += (bars[col] ?? 0) >= row ? '█' : ' ';
-        line += ' '; // spacing between bars
+        line += ' ';
       }
       lines.push(line);
     }
@@ -86,6 +90,7 @@ const Equalizer = ({ isPlaying }: { isPlaying: boolean }) => {
         </Text>
       ))}
       <Text color="#581c87">▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔</Text>
+      <Text color={theme.secondary} dimColor>{activeEqPreset}</Text>
     </Box>
   );
 };

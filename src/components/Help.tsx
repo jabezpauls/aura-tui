@@ -27,6 +27,7 @@ const Help = () => {
           <K k="2 /" desc="Search" />
           <K k="3" desc="Queue" />
           <K k="4" desc="Playlists" />
+          <K k="5" desc="EQ Editor" />
           <K k="Y" desc="Lyrics" />
           <K k="?" desc="Help" />
           <K k="Esc" desc="Go Back" />
@@ -39,6 +40,7 @@ const Help = () => {
           <K k="+ / -" desc="Volume" />
           <K k=", / ." desc="Seek ±5s" />
           <K k="L" desc="Repeat: Off/All/One" />
+          <K k="E" desc="EQ Preset" />
         </Box>
 
         {/* Column 2 */}
@@ -62,6 +64,15 @@ const Help = () => {
           <K k="S" desc="Shuffle" />
           <K k="R" desc="Autoplay" />
           <K k="D" desc="Delete" />
+
+          <Box marginTop={1}><Text bold color={theme.primary}>EQ Editor</Text></Box>
+          <K k="E" desc="Edit Preset" />
+          <K k="N" desc="New Preset" />
+          <K k="←/→" desc="Select Band" />
+          <K k="↑/↓" desc="Adjust Gain" />
+          <K k="S" desc="Save Custom" />
+          <K k="R" desc="Reset" />
+          <K k="D" desc="Delete Custom" />
         </Box>
       </Box>
 

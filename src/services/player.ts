@@ -46,7 +46,7 @@ class PlayerService {
         '   • Linux: sudo apt install mpv\n'
       );
       // Create a dummy mpv so the app doesn't crash on method calls
-      this.mpv = { on: () => { }, load: async () => { }, pause: async () => { }, resume: async () => { }, stop: async () => { }, volume: async () => { }, quit: async () => { }, seek: () => { }, goToPosition: () => { }, loop: () => { }, clearLoop: () => { }, getDuration: async () => 0, getProperty: async () => 0 };
+      this.mpv = { on: () => { }, load: async () => { }, pause: async () => { }, resume: async () => { }, stop: async () => { }, volume: async () => { }, quit: async () => { }, seek: () => { }, goToPosition: () => { }, loop: () => { }, clearLoop: () => { }, getDuration: async () => 0, getProperty: async () => 0, setProperty: async () => { } };
     }
   }
 
@@ -271,6 +271,23 @@ class PlayerService {
 
   private notifySongEnd() {
     this.songEndListeners.forEach(listener => listener());
+  }
+
+  public async setEqualizer(afString: string): Promise<boolean> {
+    try {
+      await this.mpv.setProperty('af', afString);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  public async clearEqualizer(): Promise<void> {
+    try {
+      await this.mpv.setProperty('af', '');
+    } catch {
+      // Clearing may fail if no filter was set
+    }
   }
 
   public async stop() {

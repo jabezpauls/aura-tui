@@ -3,7 +3,8 @@ import { player } from '../services/player';
 import { adBlocker } from '../services/adblock';
 import { cacheService } from '../services/cache';
 import { getRecommendations, getStreamUrl } from '../services/ytdlp';
-import { getPlayHistory, savePlayHistory } from '../utils/config';
+import { getPlayHistory, savePlayHistory, getActiveEqPreset, saveActiveEqPreset } from '../utils/config';
+import { EQ_PRESETS, buildAfString, getDisplayBars, getAllPresets, getAllPresetNames, findPreset, buildAfStringFromGains } from '../utils/eqPresets';
 import { fetchLyrics, type LyricLine } from '../services/lyrics';
 
 export interface Song {
@@ -34,13 +35,17 @@ export interface AppState {
   isRadioMode: boolean;
   currentPlaylistId: string | null;
 
+  // Equalizer State
+  activeEqPreset: string;
+  eqDisplayBars: number[];
+
   // Lyrics State
   currentLyrics: LyricLine[] | null;
   plainLyrics: string | null;
   lyricsLoading: boolean;
 
   // UI State
-  view: 'home' | 'search' | 'player' | 'queue' | 'help' | 'playlists' | 'lyrics';
+  view: 'home' | 'search' | 'player' | 'queue' | 'help' | 'playlists' | 'lyrics' | 'eq-editor';
   searchQuery: string;
   searchResults: Song[];
   isInputFocused: boolean;
@@ -61,6 +66,9 @@ export interface AppState {
   toggleAutoplay: () => void;
   toggleShuffle: () => void;
   cycleRepeatMode: () => void;
+  cycleEqPreset: () => void;
+  applyEqPreset: (presetName: string) => Promise<void>;
+  applyCustomGains: (gains: number[]) => Promise<void>;
   moveQueueItem: (fromIndex: number, toIndex: number) => void;
   removeFromQueue: (index: number) => void;
   setError: (msg: string | null) => void;
@@ -94,6 +102,8 @@ export const useStore = create<AppState>((set, get) => ({
   repeatMode: 'off',
   isRadioMode: false,
   currentPlaylistId: null,
+  activeEqPreset: getActiveEqPreset(),
+  eqDisplayBars: getDisplayBars(findPreset(getActiveEqPreset()) || EQ_PRESETS[0]),
   currentLyrics: null,
   plainLyrics: null,
   lyricsLoading: false,
@@ -150,6 +160,12 @@ export const useStore = create<AppState>((set, get) => ({
 
       // Play the resolved stream URL or cached file
       await player.play(url, song.duration);
+
+      // Re-apply EQ preset after loading new track (MPV may reset af on load)
+      const eqPreset = findPreset(get().activeEqPreset);
+      if (eqPreset && eqPreset.name !== 'Flat') {
+        player.setEqualizer(buildAfString(eqPreset)).catch(() => {});
+      }
 
       // Safety timeout: if isLoading is still true after 15s, clear it
       // This handles cases where MPV loads but never fires 'started' event
@@ -259,6 +275,46 @@ export const useStore = create<AppState>((set, get) => ({
     set({ repeatMode: next });
     // repeat-one: tell MPV to loop the current track
     player.setLoop(next === 'one');
+  },
+
+  cycleEqPreset: () => {
+    const current = get().activeEqPreset;
+    const allNames = getAllPresetNames();
+    const currentIndex = allNames.indexOf(current);
+    const nextIndex = (currentIndex + 1) % allNames.length;
+    const nextName = allNames[nextIndex];
+    get().applyEqPreset(nextName);
+  },
+
+  applyEqPreset: async (presetName: string) => {
+    const preset = findPreset(presetName);
+    if (!preset) return;
+
+    const displayBars = getDisplayBars(preset);
+
+    if (presetName === 'Flat') {
+      await player.clearEqualizer();
+    } else {
+      const success = await player.setEqualizer(buildAfString(preset));
+      if (!success) {
+        set({ activeEqPreset: presetName, eqDisplayBars: displayBars });
+        saveActiveEqPreset(presetName);
+        get().setError('EQ filter not supported by this MPV build');
+        return;
+      }
+    }
+
+    set({ activeEqPreset: presetName, eqDisplayBars: displayBars });
+    saveActiveEqPreset(presetName);
+  },
+
+  applyCustomGains: async (gains: number[]) => {
+    const afString = buildAfStringFromGains(gains);
+    if (!afString) {
+      await player.clearEqualizer();
+    } else {
+      await player.setEqualizer(afString);
+    }
   },
 
   moveQueueItem: (fromIndex: number, toIndex: number) => {
