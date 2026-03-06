@@ -218,6 +218,17 @@ class PlayerService {
     }
   }
 
+  public goToPosition(seconds: number) {
+    try {
+      this.mpv.goToPosition(seconds);
+      this.state.precisePosition = seconds;
+      this.state.position = Math.floor(seconds);
+      this.notifyListeners();
+    } catch {
+      // goToPosition may fail if no track is loaded
+    }
+  }
+
   public setLoop(enable: boolean) {
     try {
       this.looping = enable;

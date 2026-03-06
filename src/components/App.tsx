@@ -13,6 +13,7 @@ import Help from './Help';
 import Playlists from './Playlists';
 import Lyrics from './Lyrics';
 import EqEditor from './EqEditor';
+import { Party } from './Party';
 import StartupAnimation from './StartupAnimation';
 import { theme } from '../utils/theme';
 
@@ -89,28 +90,34 @@ const App = () => {
     if (input === '3') setView('queue');
     if (input === '4') setView('playlists');
     if (input === '5') setView('eq-editor');
+    if (input === '6') setView('party');
     if (input === '?') setView('help');
     if (input === '/') setView('search');
     if (input === 'y') setView(view === 'lyrics' ? 'player' : 'lyrics');
 
     // Playback Controls
-    const { togglePlay, nextTrack, prevTrack, setVolume, volume, view: currentView, seek, cycleRepeatMode } = useStore.getState();
+    const { togglePlay, nextTrack, prevTrack, setVolume, volume, view: currentView, seek, cycleRepeatMode, party } = useStore.getState();
 
-    if (input === ' ') togglePlay();
+    // Guest lockout: guests cannot control playback
+    const isGuest = party?.isInParty && !party.isHost;
+
+    if (input === ' ' && !isGuest) togglePlay();
     // Only bind n/p for track navigation when not in views that use those keys
-    if (currentView !== 'playlists' && currentView !== 'search') {
+    if (currentView !== 'playlists' && currentView !== 'search' && !isGuest) {
       if (input === 'n') nextTrack();
       if (input === 'p') prevTrack();
     }
-    if (input === '+' || input === '=') setVolume(Math.min(100, volume + 5));
-    if (input === '-' || input === '_') setVolume(Math.max(0, volume - 5));
+    if ((input === '+' || input === '=') && !isGuest) setVolume(Math.min(100, volume + 5));
+    if ((input === '-' || input === '_') && !isGuest) setVolume(Math.max(0, volume - 5));
 
     // Seek controls
-    if (input === ',') seek(-5);
-    if (input === '.') seek(5);
+    if ((input === ',' || input === '.') && !isGuest) {
+      if (input === ',') seek(-5);
+      if (input === '.') seek(5);
+    }
 
     // Repeat mode
-    if (input === 'l') cycleRepeatMode();
+    if (input === 'l' && !isGuest) cycleRepeatMode();
 
     // Equalizer preset cycling
     if (input === 'e') {
@@ -172,6 +179,7 @@ const App = () => {
       case 'lyrics': return <Lyrics />;
       case 'help': return <Help />;
       case 'eq-editor': return <EqEditor />;
+      case 'party': return <Party />;
       default: return <Home />;
     }
   };
@@ -187,6 +195,7 @@ const App = () => {
           <Text color={view === 'queue' ? theme.active : theme.muted}>[3] Queue </Text>
           <Text color={view === 'playlists' ? theme.active : theme.muted}>[4] Playlists </Text>
           <Text color={view === 'eq-editor' ? theme.active : theme.muted}>[5] EQ </Text>
+          <Text color={view === 'party' ? theme.active : theme.muted}>[6] Party </Text>
           <Text color={view === 'lyrics' ? theme.active : theme.muted}>[Y] Lyrics </Text>
           <Text color={view === 'help' ? theme.active : theme.muted}>[?] Help</Text>
           <Text color={theme.dim}> | Ctrl+Q: Quit</Text>

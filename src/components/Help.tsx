@@ -28,6 +28,7 @@ const Help = () => {
           <K k="3" desc="Queue" />
           <K k="4" desc="Playlists" />
           <K k="5" desc="EQ Editor" />
+          <K k="6" desc="Party" />
           <K k="Y" desc="Lyrics" />
           <K k="?" desc="Help" />
           <K k="Esc" desc="Go Back" />
@@ -73,6 +74,12 @@ const Help = () => {
           <K k="S" desc="Save Custom" />
           <K k="R" desc="Reset" />
           <K k="D" desc="Delete Custom" />
+
+          <Box marginTop={1}><Text bold color={theme.primary}>Party</Text></Box>
+          <K k="Enter" desc="Select / Join" />
+          <K k="↑/↓" desc="Navigate Menu" />
+          <K k="Tab" desc="Toggle Options" />
+          <K k="Esc" desc="Leave / Back" />
         </Box>
       </Box>
 

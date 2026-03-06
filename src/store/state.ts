@@ -6,6 +6,8 @@ import { getRecommendations, getStreamUrl } from '../services/ytdlp';
 import { getPlayHistory, savePlayHistory, getActiveEqPreset, saveActiveEqPreset } from '../utils/config';
 import { EQ_PRESETS, buildAfString, getDisplayBars, getAllPresets, getAllPresetNames, findPreset, buildAfStringFromGains } from '../utils/eqPresets';
 import { fetchLyrics, type LyricLine } from '../services/lyrics';
+import { partyService } from '../services/party';
+import type { PartySong } from '../types/party';
 
 export interface Song {
   id: string;
@@ -15,6 +17,17 @@ export interface Song {
   duration: number;
   thumbnail?: string;
   url?: string; // Streaming URL if resolved
+}
+
+export interface PartyState {
+  isInParty: boolean;
+  isHost: boolean;
+  roomCode: string | null;
+  partyName: string | null;
+  username: string | null;
+  users: string[];
+  connected: boolean;
+  connecting: boolean;
 }
 
 export interface AppState {
@@ -44,8 +57,11 @@ export interface AppState {
   plainLyrics: string | null;
   lyricsLoading: boolean;
 
+  // Party State
+  party: PartyState | null;
+
   // UI State
-  view: 'home' | 'search' | 'player' | 'queue' | 'help' | 'playlists' | 'lyrics' | 'eq-editor';
+  view: 'home' | 'search' | 'player' | 'queue' | 'help' | 'playlists' | 'lyrics' | 'eq-editor' | 'party';
   searchQuery: string;
   searchResults: Song[];
   isInputFocused: boolean;
@@ -75,6 +91,8 @@ export interface AppState {
   fetchLyricsForSong: (song: Song) => Promise<void>;
   fetchRecommendations: (videoId: string) => Promise<void>;
   playPlaylist: (songs: Song[], startIndex?: number, playlistId?: string) => Promise<void>;
+  setPartyState: (party: PartyState | null) => void;
+  joinPartyPlayback: (song: PartySong, position: number) => Promise<void>;
 }
 
 // Fisher-Yates shuffle algorithm
@@ -86,6 +104,10 @@ const shuffleArray = <T>(array: T[]): T[] => {
   }
   return shuffled;
 };
+
+function toPartySong(song: Song): PartySong {
+  return { id: song.id, title: song.title, artist: song.artist, duration: song.duration };
+}
 
 export const useStore = create<AppState>((set, get) => ({
   // Initial State
@@ -107,6 +129,7 @@ export const useStore = create<AppState>((set, get) => ({
   currentLyrics: null,
   plainLyrics: null,
   lyricsLoading: false,
+  party: null,
   view: 'home',
   searchQuery: '',
   searchResults: [],
@@ -160,6 +183,12 @@ export const useStore = create<AppState>((set, get) => ({
 
       // Play the resolved stream URL or cached file
       await player.play(url, song.duration);
+
+      // Party broadcast: notify guests of new song
+      const partyState = get().party;
+      if (partyState?.isHost && !partyService._partySync) {
+        partyService.broadcastPlay(toPartySong(song), 0);
+      }
 
       // Re-apply EQ preset after loading new track (MPV may reset af on load)
       const eqPreset = findPreset(get().activeEqPreset);
@@ -217,6 +246,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   addToQueue: (song: Song) => {
     set((state) => ({ queue: [...state.queue, song] }));
+
+    // Party broadcast
+    const partyState = get().party;
+    if (partyState?.isHost && !partyService._partySync) {
+      partyService.broadcastQueueUpdate(get().queue.map(toPartySong));
+    }
   },
 
   nextTrack: async () => {
@@ -260,13 +295,32 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   togglePlay: () => {
-    const isPlaying = !get().isPlaying;
+    const wasPlaying = get().isPlaying;
+    const isPlaying = !wasPlaying;
     set({ isPlaying });
     player.togglePlay();
+
+    // Party broadcast
+    const partyState = get().party;
+    if (partyState?.isHost && !partyService._partySync) {
+      const pos = player.getState().position;
+      if (wasPlaying) {
+        partyService.broadcastPause(pos);
+      } else {
+        partyService.broadcastResume(pos);
+      }
+    }
   },
 
   seek: (seconds: number) => {
     player.seek(seconds);
+
+    // Party broadcast
+    const partyState = get().party;
+    if (partyState?.isHost && !partyService._partySync) {
+      const pos = player.getState().position;
+      partyService.broadcastSeek(pos + seconds);
+    }
   },
 
   cycleRepeatMode: () => {
@@ -324,6 +378,11 @@ export const useStore = create<AppState>((set, get) => ({
     if (item) {
       queue.splice(toIndex, 0, item);
       set({ queue });
+
+      const partyState = get().party;
+      if (partyState?.isHost && !partyService._partySync) {
+        partyService.broadcastQueueUpdate(get().queue.map(toPartySong));
+      }
     }
   },
 
@@ -332,6 +391,11 @@ export const useStore = create<AppState>((set, get) => ({
     if (index < 0 || index >= queue.length) return;
     queue.splice(index, 1);
     set({ queue });
+
+    const partyState = get().party;
+    if (partyState?.isHost && !partyService._partySync) {
+      partyService.broadcastQueueUpdate(get().queue.map(toPartySong));
+    }
   },
 
   setError: (msg: string | null) => {
@@ -420,6 +484,28 @@ export const useStore = create<AppState>((set, get) => ({
       set({ shuffle: true, queue: shuffleArray(state.queue) });
     } else {
       set({ shuffle: newShuffle });
+    }
+  },
+
+  setPartyState: (party: PartyState | null) => {
+    set({ party });
+  },
+
+  joinPartyPlayback: async (song: PartySong, position: number) => {
+    // Guest sync: play song without re-broadcasting
+    const fullSong: Song = {
+      id: song.id,
+      title: song.title,
+      artist: song.artist,
+      duration: song.duration,
+    };
+    // Use playSong but _partySync flag is already set by the caller (partyService)
+    await get().playSong(fullSong);
+    // Seek to the position after playback starts
+    if (position > 0) {
+      setTimeout(() => {
+        player.goToPosition(position);
+      }, 500);
     }
   },
 
