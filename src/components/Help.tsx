@@ -28,6 +28,7 @@ const Help = () => {
           <K k="3" desc="Queue" />
           <K k="4" desc="Playlists" />
           <K k="5" desc="EQ Editor" />
+          <K k="6" desc="Party" />
           <K k="Y" desc="Lyrics" />
           <K k="?" desc="Help" />
           <K k="Esc" desc="Go Back" />
@@ -73,17 +74,25 @@ const Help = () => {
           <K k="S" desc="Save Custom" />
           <K k="R" desc="Reset" />
           <K k="D" desc="Delete Custom" />
+
+          <Box marginTop={1}><Text bold color={theme.primary}>Party</Text></Box>
+          <K k="Enter" desc="Select / Join" />
+          <K k="↑/↓" desc="Navigate Menu" />
+          <K k="Tab" desc="Toggle Options" />
+          <K k="Esc" desc="Leave / Back" />
         </Box>
       </Box>
 
       <Box marginTop={1} flexDirection="column" alignItems="center">
-        <Text color={theme.accent}>Made with ❤️ by Jacob Ashirwad and Jibin ES</Text>
+        <Text color={theme.accent}>Made with ❤️ by Jacob Ashirwad, Jibin ES & Jabez Paul</Text>
         <Link url="https://github.com/JibinES/aura-tui" color={theme.dim}>github.com/JibinES/aura-tui</Link>
         <Box>
           <Text color={theme.dim}>Jacob: </Text>
           <Link url="https://github.com/irl-jacob" color={theme.dim}>github.com/irl-jacob</Link>
           <Text color={theme.dim}>  •  Jibin: </Text>
           <Link url="https://github.com/JibinES" color={theme.dim}>github.com/JibinES</Link>
+          <Text color={theme.dim}>  •  Jabez: </Text>
+          <Link url="https://github.com/jabezpauls" color={theme.dim}>github.com/jabezpauls</Link>
         </Box>
       </Box>
     </Box>

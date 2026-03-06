@@ -96,7 +96,7 @@ const Equalizer = ({ isPlaying }: { isPlaying: boolean }) => {
 };
 
 const Player = () => {
-  const { currentSong, isPlaying, isLoading, volume, currentTime, duration, shuffle, autoplay, queue, isRadioMode, repeatMode } = useStore();
+  const { currentSong, isPlaying, isLoading, volume, currentTime, duration, shuffle, autoplay, queue, isRadioMode, repeatMode, party } = useStore();
 
   if (!currentSong) {
     return (
@@ -156,6 +156,11 @@ const Player = () => {
               </Text>
               <Text color={theme.muted}>Queue: {queue.length}</Text>
               {isRadioMode && <Text color={theme.secondary}>📻 Radio</Text>}
+              {party?.isInParty && (
+                <Text color={theme.warning}>
+                  {party.isHost ? '🎧 DJ Mode' : `🎧 Party: ${party.roomCode}`}
+                </Text>
+              )}
             </Box>
           </>
         )}

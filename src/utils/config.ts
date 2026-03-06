@@ -20,6 +20,8 @@ export interface ConfigSchema {
   playHistory: HistoryEntry[];
   activeEqPreset: string;
   customEqPresets: CustomEqPreset[];
+  partyUsername: string | null;
+  partyServerUrl: string;
 }
 
 const defaultConfig: ConfigSchema = {
@@ -28,6 +30,8 @@ const defaultConfig: ConfigSchema = {
   playHistory: [],
   activeEqPreset: 'Flat',
   customEqPresets: [],
+  partyUsername: null,
+  partyServerUrl: 'wss://aura.jabezpaul.tech',
 };
 
 const config = new Conf<ConfigSchema>({
@@ -57,5 +61,11 @@ export const saveActiveEqPreset = (preset: string) => config.set('activeEqPreset
 
 export const getCustomEqPresets = (): CustomEqPreset[] => config.get('customEqPresets') || [];
 export const saveCustomEqPresets = (presets: CustomEqPreset[]) => config.set('customEqPresets', presets);
+
+// Party config helpers
+export const getPartyUsername = (): string | null => config.get('partyUsername') || null;
+export const setPartyUsername = (username: string) => config.set('partyUsername', username);
+export const getPartyServerUrl = (): string => config.get('partyServerUrl') || 'wss://aura.jabezpaul.tech';
+export const setPartyServerUrl = (url: string) => config.set('partyServerUrl', url);
 
 export default config;

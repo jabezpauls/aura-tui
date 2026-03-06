@@ -1,0 +1,8 @@
+services:
+  aura-party:
+    build: .
+    ports:
+      - "8787:8765"
+    restart: unless-stopped
+    environment:
+      - PORT=8765
