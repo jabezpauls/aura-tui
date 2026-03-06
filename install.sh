@@ -131,16 +131,23 @@ fi
 
 echo -e "${BOLD}Installing AuraTUI...${NC}"
 
+# Resolve the directory where install.sh lives (i.e. the repo root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Build first
+echo -e "  ${YELLOW}⟳${NC} Building..."
 if command -v bun &>/dev/null; then
-  PKG="bun"
+  (cd "$SCRIPT_DIR" && bun install && bun run build)
 elif command -v npm &>/dev/null; then
-  PKG="npm"
+  (cd "$SCRIPT_DIR" && npm install && npm run build)
 else
   echo -e "${RED}✗ Neither npm nor bun found.${NC}"
   exit 1
 fi
 
-$PKG install -g aura-tui
+# Install globally from local repo
+echo -e "  ${YELLOW}⟳${NC} Linking globally..."
+npm install -g "$SCRIPT_DIR"
 
 echo ""
 echo -e "${GREEN}${BOLD}    ╔═══════════════════════════════╗"
